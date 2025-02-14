@@ -51,20 +51,7 @@ async function run() {
 
     const db = client.db('plantNet-project')
     const usersCollection = db.collection("users")
-
-    app.post('/users/:email', async (req, res) => {
-      const email = req.params.email;
-      const query = { email }
-      const user = req.body;
-      const isExist = await usersCollection.findOne(query)
-      if (isExist) {
-        return res.send(isExist)
-      }
-      const result = await usersCollection.insertOne({ ...user, role: 'customer', timeStamp: Date.now() })
-      res.send(result)
-    })
-
-
+    const plantsCollection = db.collection('plants')
 
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
@@ -94,6 +81,31 @@ async function run() {
         res.status(500).send(err)
       }
     })
+
+    app.post('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email }
+      const user = req.body;
+      const isExist = await usersCollection.findOne(query)
+      if (isExist) {
+        return res.send(isExist)
+      }
+      const result = await usersCollection.insertOne({ ...user, role: 'customer', timeStamp: Date.now() })
+      res.send(result)
+    })
+
+    app.post(('/plants', async (req, res) => {
+      const plants = req.body;
+      const result = await plantsCollection.insertOne(plants)
+      res.send(result)
+    }))
+
+
+
+
+ 
+
+
 
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
