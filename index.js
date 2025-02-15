@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
+const { MongoClient, ServerApiVersion } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 
@@ -94,16 +94,28 @@ async function run() {
       res.send(result)
     })
 
-    app.post(('/plants', async (req, res) => {
+    app.post('/plants', async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
-    }))
+    })
+    // Plants data get db
+    app.get('/plants', async (req, res) => {
+      const result = await plantsCollection.find().toArray()
+      res.send(result)
+    })
+
+    app.get('/plants/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query={_id:new Object(id)}
+      const result=await plantsCollection.findOne(query)
+      res.send(result)
+    })
 
 
 
 
- 
+
 
 
 
