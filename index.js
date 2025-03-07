@@ -52,6 +52,7 @@ async function run() {
     const db = client.db('plantNet-project')
     const usersCollection = db.collection("users")
     const plantsCollection = db.collection('plants')
+    const ordersCollection = db.collection('orders')
 
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
@@ -105,14 +106,18 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/plants/:id',async(req,res)=>{
-      const id=req.params.id;
-      const query={_id:new ObjectId(id)}
-      const result=await plantsCollection.findOne(query)
+    app.get('/plants/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await plantsCollection.findOne(query)
       res.send(result)
     })
-
-
+    // order save to database
+    app.post('/order', async (req, res) => {
+      const purchase = req.body;
+      const result = await ordersCollection.insertOne(purchase)
+      res.send(result)
+    })
 
 
 
