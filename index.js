@@ -130,6 +130,48 @@ async function run() {
       res.send(result)
     })
 
+    // View My Orders
+    app.get('/customer-orders/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'customer.email': email }
+      const result = await ordersCollection.aggregate([
+        {
+          $match: { 'customer.email': email }
+        },
+        {
+          $addFields: {
+            plantId: { $toObjectId: '$plantId' }
+          },
+        },
+        {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          },
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name',
+            image: '$plants.image',
+            category: '$plants.category',
+          },
+        },
+        {
+          $project: {
+            plants: 0,
+          }
+        }
+
+      ]).toArray()
+      // const result=await ordersCollection.find(query).toArray()
+      res.send(result)
+    })
+
 
 
 
