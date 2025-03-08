@@ -118,6 +118,17 @@ async function run() {
       const result = await ordersCollection.insertOne(purchase)
       res.send(result)
     })
+    // Quantity updated
+    app.patch('/order/quantity/:id', async (req, res) => {
+      const id = req.params.id;
+      const { UpdateQuantity } = req.body;
+      const filter = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $inc: { quantity: -UpdateQuantity }
+      }
+      const result = await plantsCollection.updateOne(filter, updateDoc)
+      res.send(result)
+    })
 
 
 
