@@ -125,10 +125,15 @@ async function run() {
     // Quantity updated
     app.patch('/order/quantity/:id', async (req, res) => {
       const id = req.params.id;
-      const { UpdateQuantity } = req.body;
+      const { UpdateQuantity, status } = req.body;
       const filter = { _id: new ObjectId(id) }
-      const updateDoc = {
+      let updateDoc = {
         $inc: { quantity: -UpdateQuantity }
+      }
+      if (status === 'increase') {
+        updateDoc = {
+          $inc: { quantity: UpdateQuantity }
+        }
       }
       const result = await plantsCollection.updateOne(filter, updateDoc)
       res.send(result)
@@ -181,8 +186,8 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const order = await ordersCollection.findOne(query)
-      if (order.status === 'delivered') {
-        return res.status(409).send('cannot cancel order')
+      if (order.status === 'Delivered') {
+        return res.status(409).send('cannot cancel once the product is Delivered!')
       }
       const result = await ordersCollection.deleteOne(query)
       res.send(result)
