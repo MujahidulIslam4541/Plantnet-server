@@ -100,6 +100,7 @@ async function run() {
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
     })
+
     // Plants data get db
     app.get('/plants', async (req, res) => {
       const result = await plantsCollection.find().toArray()
@@ -112,12 +113,15 @@ async function run() {
       const result = await plantsCollection.findOne(query)
       res.send(result)
     })
+
+
     // order save to database
     app.post('/order', async (req, res) => {
       const purchase = req.body;
       const result = await ordersCollection.insertOne(purchase)
       res.send(result)
     })
+
     // Quantity updated
     app.patch('/order/quantity/:id', async (req, res) => {
       const id = req.params.id;
@@ -133,7 +137,6 @@ async function run() {
     // View My Orders
     app.get('/customer-orders/:email', async (req, res) => {
       const email = req.params.email;
-      const query = { 'customer.email': email }
       const result = await ordersCollection.aggregate([
         {
           $match: { 'customer.email': email }
@@ -172,6 +175,18 @@ async function run() {
       res.send(result)
     })
 
+
+    // Cancel order
+    app.delete('/order-delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const order = await ordersCollection.findOne(query)
+      if (order.status === 'delivered') {
+        return res.status(409).send('cannot cancel order')
+      }
+      const result = await ordersCollection.deleteOne(query)
+      res.send(result)
+    })
 
 
 
