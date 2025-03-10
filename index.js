@@ -95,7 +95,7 @@ async function run() {
       const result = await usersCollection.insertOne({ ...user, role: 'customer', timeStamp: Date.now() })
       res.send(result)
     })
-
+    // User status updated
     app.patch('/user/:email', async (req, res) => {
       const email = req.params.email;
       const query = { email }
@@ -111,7 +111,12 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc)
       res.send(result)
     })
-
+    // User role get
+    app.get('/user/role/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email })
+      res.send({ role: result?.role })
+    })
 
     // Post Plants data
     app.post('/plants', async (req, res) => {
