@@ -83,6 +83,7 @@ async function run() {
       }
     })
 
+    // User collections data
     app.post('/users/:email', async (req, res) => {
       const email = req.params.email;
       const query = { email }
@@ -95,6 +96,24 @@ async function run() {
       res.send(result)
     })
 
+    app.patch('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email }
+      const user = await usersCollection.findOne(query)
+      if (!user || user?.status === 'Requested') {
+        return res.status(400).send("User already requested . Wait for some time")
+      }
+      const updateDoc = {
+        $set: {
+          status: "Requested"
+        }
+      }
+      const result = await usersCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
+
+    // Post Plants data
     app.post('/plants', async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
