@@ -118,6 +118,14 @@ async function run() {
       res.send({ role: result?.role })
     })
 
+    // Get all users
+    app.get("/all-users/:email", async (req, res) => {
+      const email = req.params.email
+      const query = { email: { $ne: email } }
+      const result = await usersCollection.find(query).toArray()
+      res.send(result)
+    })
+
     // Post Plants data
     app.post('/plants', async (req, res) => {
       const plants = req.body;
