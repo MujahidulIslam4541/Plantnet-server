@@ -54,6 +54,17 @@ async function run() {
     const plantsCollection = db.collection('plants')
     const ordersCollection = db.collection('orders')
 
+    // Create Admin Verified Middleware
+    const AdminMiddleware = async (req, res, next) => {
+      next()
+    }
+
+
+    // Create Seller verified middleware
+    const SellerMiddleware = async (req, res, next) => {
+      next()
+    }
+
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -96,7 +107,7 @@ async function run() {
       res.send(result)
     })
     // User status updated
-    app.patch('/user/:email', async (req, res) => {
+    app.patch('/user/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email }
       const user = await usersCollection.findOne(query)
@@ -112,14 +123,14 @@ async function run() {
       res.send(result)
     })
     // User role get
-    app.get('/user/role/:email', async (req, res) => {
+    app.get('/user/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.findOne({ email })
       res.send({ role: result?.role })
     })
 
     // Get all users
-    app.get("/all-users/:email", async (req, res) => {
+    app.get("/all-users/:email", verifyToken, async (req, res) => {
       const email = req.params.email
       const query = { email: { $ne: email } }
       const result = await usersCollection.find(query).toArray()
@@ -127,7 +138,7 @@ async function run() {
     })
 
     // Update user role && status
-    app.patch('/user/role/:email', async (req, res) => {
+    app.patch('/user/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { role } = req.body;
       const query = { email }
@@ -139,7 +150,7 @@ async function run() {
     })
 
     // Post Plants data
-    app.post('/plants', async (req, res) => {
+    app.post('/plants', verifyToken, async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
@@ -160,14 +171,14 @@ async function run() {
 
 
     // order save to database
-    app.post('/order', async (req, res) => {
+    app.post('/order', verifyToken, async (req, res) => {
       const purchase = req.body;
       const result = await ordersCollection.insertOne(purchase)
       res.send(result)
     })
 
     // Quantity updated
-    app.patch('/order/quantity/:id', async (req, res) => {
+    app.patch('/order/quantity/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const { UpdateQuantity, status } = req.body;
       const filter = { _id: new ObjectId(id) }
@@ -184,7 +195,7 @@ async function run() {
     })
 
     // View My Orders
-    app.get('/customer-orders/:email', async (req, res) => {
+    app.get('/customer-orders/:email',  async (req, res) => {
       const email = req.params.email;
       const result = await ordersCollection.aggregate([
         {
