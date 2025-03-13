@@ -57,7 +57,7 @@ async function run() {
     const verifyAdmin = async (req, res, next) => {
       // console.log("data from verifyToken Middleware----->",req.user?.email)
       const email = req.user?.email;
-      const { query } = { email }
+      const query = { email }
       const result = await usersCollection.findOne(query)
       if (!result || result?.role !== "admin") {
         return res.status(403).send({ message: "Forbidden Access! Admin Only Action" })
@@ -69,7 +69,7 @@ async function run() {
     const verifySeller = async (req, res, next) => {
       // console.log("data from verifyToken Middleware----->",req.user?.email)
       const email = req.user?.email;
-      const { query } = { email }
+      const query = { email }
       const result = await usersCollection.findOne(query)
       if (!result || result?.role !== "seller") {
         return res.status(403).send({ message: "Forbidden Access! seller Only Action" })
@@ -120,6 +120,8 @@ async function run() {
       const result = await usersCollection.insertOne({ ...user, role: 'customer', timeStamp: Date.now() })
       res.send(result)
     })
+
+
     // User status updated
     app.patch('/user/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -164,12 +166,21 @@ async function run() {
       res.send(result)
     })
 
-    // add Plants data
+    // add Plants db
     app.post('/plants', async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
     })
+
+    // My inventory plants get
+    app.get("/plants/seller", verifyToken, verifySeller, async (req, res) => {
+      const email = req.user?.email
+      const query = { 'seller.email': email }
+      const result = await plantsCollection.find(query).toArray()
+      res.send(result)
+    })
+
 
     // Plants data get db
     app.get('/plants', async (req, res) => {
