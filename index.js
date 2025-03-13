@@ -190,7 +190,7 @@ async function run() {
     })
 
     // Seller Orders Manage
-    app.get('/seller-orders/:email', verifyToken,verifySeller, async (req, res) => {
+    app.get('/seller-orders/:email', verifyToken, verifySeller, async (req, res) => {
       const email = req.params.email;
       const result = await ordersCollection.aggregate([
         {
@@ -225,6 +225,18 @@ async function run() {
 
       ]).toArray()
       // const result=await ordersCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    // Order Status Update By Seller
+    app.patch('/orders/:id', verifyToken, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: { status }
+      }
+      const result = await ordersCollection.updateOne(query, updateDoc)
       res.send(result)
     })
 
