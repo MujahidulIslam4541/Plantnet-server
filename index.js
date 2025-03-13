@@ -22,7 +22,6 @@ app.use(morgan('dev'))
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
-
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -60,7 +59,7 @@ async function run() {
       const email = req.user?.email;
       const { query } = { email }
       const result = await usersCollection.findOne(query)
-      if (!result || result?.role === "admin") {
+      if (!result || result?.role !== "admin") {
         return res.status(403).send({ message: "Forbidden Access! Admin Only Action" })
       }
 
@@ -72,18 +71,13 @@ async function run() {
       const email = req.user?.email;
       const { query } = { email }
       const result = await usersCollection.findOne(query)
-      if (!result || result?.role === "seller") {
+      if (!result || result?.role !== "seller") {
         return res.status(403).send({ message: "Forbidden Access! seller Only Action" })
       }
 
       next()
     }
 
-
-    // Create Seller verified middleware
-    const SellerMiddleware = async (req, res, next) => {
-      next()
-    }
 
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
@@ -171,7 +165,7 @@ async function run() {
     })
 
     // add Plants data
-    app.post('/plants', verifyToken, verifySeller, async (req, res) => {
+    app.post('/plants', async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
