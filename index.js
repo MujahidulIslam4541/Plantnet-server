@@ -55,7 +55,27 @@ async function run() {
     const ordersCollection = db.collection('orders')
 
     // Create Admin Verified Middleware
-    const AdminMiddleware = async (req, res, next) => {
+    const verifyAdmin = async (req, res, next) => {
+      // console.log("data from verifyToken Middleware----->",req.user?.email)
+      const email = req.user?.email;
+      const { query } = { email }
+      const result = await usersCollection.findOne(query)
+      if (!result || result?.role === "admin") {
+        return res.status(403).send({ message: "Forbidden Access! Admin Only Action" })
+      }
+
+      next()
+    }
+    // Create seller Verified Middleware
+    const verifySeller = async (req, res, next) => {
+      // console.log("data from verifyToken Middleware----->",req.user?.email)
+      const email = req.user?.email;
+      const { query } = { email }
+      const result = await usersCollection.findOne(query)
+      if (!result || result?.role === "seller") {
+        return res.status(403).send({ message: "Forbidden Access! seller Only Action" })
+      }
+
       next()
     }
 
@@ -122,6 +142,7 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc)
       res.send(result)
     })
+
     // User role get
     app.get('/user/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -130,7 +151,7 @@ async function run() {
     })
 
     // Get all users
-    app.get("/all-users/:email", verifyToken, async (req, res) => {
+    app.get("/all-users/:email", verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email
       const query = { email: { $ne: email } }
       const result = await usersCollection.find(query).toArray()
@@ -138,7 +159,7 @@ async function run() {
     })
 
     // Update user role && status
-    app.patch('/user/role/:email', verifyToken, async (req, res) => {
+    app.patch('/user/role/:email', verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const { role } = req.body;
       const query = { email }
@@ -149,8 +170,8 @@ async function run() {
       res.send(result)
     })
 
-    // Post Plants data
-    app.post('/plants', verifyToken, async (req, res) => {
+    // add Plants data
+    app.post('/plants', verifyToken, verifySeller, async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
@@ -195,7 +216,7 @@ async function run() {
     })
 
     // View My Orders
-    app.get('/customer-orders/:email',  async (req, res) => {
+    app.get('/customer-orders/:email', async (req, res) => {
       const email = req.params.email;
       const result = await ordersCollection.aggregate([
         {
@@ -237,7 +258,7 @@ async function run() {
 
 
     // Cancel order
-    app.delete('/order-delete/:id', async (req, res) => {
+    app.delete('/order-delete/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const order = await ordersCollection.findOne(query)
