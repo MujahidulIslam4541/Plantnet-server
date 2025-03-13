@@ -189,6 +189,47 @@ async function run() {
       res.send(result)
     })
 
+    // Seller Orders Manage
+    app.get('/seller-orders/:email', verifyToken,verifySeller, async (req, res) => {
+      const email = req.params.email;
+      const result = await ordersCollection.aggregate([
+        {
+          $match: { 'seller': email }
+        },
+        {
+          $addFields: {
+            plantId: { $toObjectId: '$plantId' }
+          },
+        },
+        {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          },
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name',
+          },
+        },
+        {
+          $project: {
+            plants: 0,
+          }
+        }
+
+      ]).toArray()
+      // const result=await ordersCollection.find(query).toArray()
+      res.send(result)
+    })
+
+
+
 
     // Plants data get db
     app.get('/plants', async (req, res) => {
