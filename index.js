@@ -67,7 +67,7 @@ const sendEmail = (emailAddress, emailBody) => {
     to: emailAddress, // list of receivers
     subject: emailBody?.subject, // Subject line
     text: emailBody?.message, // plain text body
-    html: "<b>Hello world?</b>", // html body
+    // html: "<b>Hello world?</b>", // html body
   }
   transporter.sendMail(sendEmail, (error, info) => {
     if (error) {
@@ -311,10 +311,10 @@ async function run() {
           subject: 'Order Successful!',
           message: `You've placed On Order Successfully!. transactionId ${result?.insertedId}  `
         })
-        // send customer
+        // send email seller
         sendEmail(purchase?.seller, {
           subject: 'Hurry! .You Have an Order to process',
-          message: `Get The Plant Ready for!. transactionId ${purchase?.customer?.name}  `
+          message: `Get The Plant Ready for!.  ${purchase?.customer?.name}  `
         })
       }
       res.send(result)
