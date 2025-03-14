@@ -52,11 +52,28 @@ const sendEmail = (emailAddress, emailBody) => {
       rejectUnauthorized: false, //certificate check 
     },
   });
+  // transport email verify
   transporter.verify((error, success) => {
     if (error) {
       console.log(error)
     } else {
       console.log('transporter is ready for send email', success)
+    }
+  })
+
+  // send email
+  const sendEmail = {
+    from: process.env.NODEMAILER_USER_EMAIL, // sender address
+    to: emailAddress, // list of receivers
+    subject: emailBody?.subject, // Subject line
+    text: emailBody?.message, // plain text body
+    html: "<b>Hello world?</b>", // html body
+  }
+  transporter.sendMail(sendEmail, (error, info) => {
+    if (error) {
+      console.log(error)
+    } else {
+      console.log('send email: ', info)
     }
   })
 }
@@ -285,9 +302,21 @@ async function run() {
 
     // order save to database
     app.post('/order', verifyToken, async (req, res) => {
-      sendEmail()
       const purchase = req.body;
       const result = await ordersCollection.insertOne(purchase)
+      // send Email
+      if (result?.insertedId) {
+        // send customer
+        sendEmail(purchase?.customer?.email, {
+          subject: 'Order Successful!',
+          message: `You've placed On Order Successfully!. transactionId ${result?.insertedId}  `
+        })
+        // send customer
+        sendEmail(purchase?.seller, {
+          subject: 'Hurry! .You Have an Order to process',
+          message: `Get The Plant Ready for!. transactionId ${purchase?.customer?.name}  `
+        })
+      }
       res.send(result)
     })
 
