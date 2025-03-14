@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
+const nodemailer = require("nodemailer");
 
 const port = process.env.PORT || 3000
 const app = express()
@@ -20,6 +21,7 @@ app.use(express.json())
 app.use(cookieParser())
 app.use(morgan('dev'))
 
+// Create and check Jwt verifyToken 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
   if (!token) {
@@ -32,6 +34,30 @@ const verifyToken = async (req, res, next) => {
     }
     req.user = decoded
     next()
+  })
+}
+
+// send email using Nodemailer
+const sendEmail = (emailAddress, emailBody) => {
+  // create transporter
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.NODEMAILER_USER_EMAIL,
+      pass: process.env.NODEMAILER_APP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false, //certificate check 
+    },
+  });
+  transporter.verify((error, success) => {
+    if (error) {
+      console.log(error)
+    } else {
+      console.log('transporter is ready for send email', success)
+    }
   })
 }
 
@@ -259,6 +285,7 @@ async function run() {
 
     // order save to database
     app.post('/order', verifyToken, async (req, res) => {
+      sendEmail()
       const purchase = req.body;
       const result = await ordersCollection.insertOne(purchase)
       res.send(result)
