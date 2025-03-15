@@ -151,6 +151,8 @@ async function run() {
       }
     })
 
+
+
     // User collections data
     app.post('/users/:email', async (req, res) => {
       const email = req.params.email;
@@ -163,8 +165,6 @@ async function run() {
       const result = await usersCollection.insertOne({ ...user, role: 'customer', timeStamp: Date.now() })
       res.send(result)
     })
-
-
     // User status updated
     app.patch('/user/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -181,13 +181,110 @@ async function run() {
       const result = await usersCollection.updateOne(query, updateDoc)
       res.send(result)
     })
-
     // User role get
     app.get('/user/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.findOne({ email })
       res.send({ role: result?.role })
     })
+
+
+    // order save to database
+    app.post('/order', verifyToken, async (req, res) => {
+      const purchase = req.body;
+      const result = await ordersCollection.insertOne(purchase)
+      // send Email
+      if (result?.insertedId) {
+        // send customer
+        sendEmail(purchase?.customer?.email, {
+          subject: 'Order Successful!',
+          message: `You've placed On Order Successfully!. transactionId ${result?.insertedId}  `
+        })
+        // send email seller
+        sendEmail(purchase?.seller, {
+          subject: 'Hurry! .You Have an Order to process',
+          message: `Get The Plant Ready for!.  ${purchase?.customer?.name}  `
+        })
+      }
+      res.send(result)
+    })
+
+    // Quantity updated
+    app.patch('/order/quantity/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const { UpdateQuantity, status } = req.body;
+      const filter = { _id: new ObjectId(id) }
+      let updateDoc = {
+        $inc: { quantity: -UpdateQuantity }
+      }
+      if (status === 'increase') {
+        updateDoc = {
+          $inc: { quantity: UpdateQuantity }
+        }
+      }
+      const result = await plantsCollection.updateOne(filter, updateDoc)
+      res.send(result)
+    })
+
+    // View My Orders
+    app.get('/customer-orders/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const result = await ordersCollection.aggregate([
+        {
+          $match: { 'customer.email': email }
+        },
+        {
+          $addFields: {
+            plantId: { $toObjectId: '$plantId' }
+          },
+        },
+        {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          },
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name',
+            image: '$plants.image',
+            category: '$plants.category',
+          },
+        },
+        {
+          $project: {
+            plants: 0,
+          }
+        }
+
+      ]).toArray()
+      // const result=await ordersCollection.find(query).toArray()
+      res.send(result)
+    })
+
+
+    // Cancel order
+    app.delete('/order-delete/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const order = await ordersCollection.findOne(query)
+      if (order.status === 'Delivered') {
+        return res.status(409).send('cannot cancel once the product is Delivered!')
+      }
+      const result = await ordersCollection.deleteOne(query)
+      res.send(result)
+    })
+
+
+
+
+
+
 
     // Get all users
     app.get("/all-users/:email", verifyToken, verifyAdmin, async (req, res) => {
@@ -209,8 +306,39 @@ async function run() {
       res.send(result)
     })
 
+    // Admin stat
+    app.get('/admin-stat', verifyToken, verifyAdmin, async (req, res) => {
+      const totalUsers = await usersCollection.estimatedDocumentCount()
+      const totalPlants = await plantsCollection.estimatedDocumentCount()
+
+      // const allOrders = await ordersCollection.find().toArray()
+      // const totalOrders = allOrders.length;
+      // const totalPrice = allOrders.reduce((sum, order) => sum + order.price, 0)
+      const orderDetails = await ordersCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$price' },
+            totalOrders: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0
+          }
+        }
+      ])
+        .next()
+      res.send({ totalUsers, totalPlants, ...orderDetails })
+    }
+    )
+
+
+
+
+
     // add Plants db
-    app.post('/plants', async (req, res) => {
+    app.post('/plants',  async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
@@ -300,96 +428,6 @@ async function run() {
     })
 
 
-    // order save to database
-    app.post('/order', verifyToken, async (req, res) => {
-      const purchase = req.body;
-      const result = await ordersCollection.insertOne(purchase)
-      // send Email
-      if (result?.insertedId) {
-        // send customer
-        sendEmail(purchase?.customer?.email, {
-          subject: 'Order Successful!',
-          message: `You've placed On Order Successfully!. transactionId ${result?.insertedId}  `
-        })
-        // send email seller
-        sendEmail(purchase?.seller, {
-          subject: 'Hurry! .You Have an Order to process',
-          message: `Get The Plant Ready for!.  ${purchase?.customer?.name}  `
-        })
-      }
-      res.send(result)
-    })
-
-    // Quantity updated
-    app.patch('/order/quantity/:id', verifyToken, async (req, res) => {
-      const id = req.params.id;
-      const { UpdateQuantity, status } = req.body;
-      const filter = { _id: new ObjectId(id) }
-      let updateDoc = {
-        $inc: { quantity: -UpdateQuantity }
-      }
-      if (status === 'increase') {
-        updateDoc = {
-          $inc: { quantity: UpdateQuantity }
-        }
-      }
-      const result = await plantsCollection.updateOne(filter, updateDoc)
-      res.send(result)
-    })
-
-    // View My Orders
-    app.get('/customer-orders/:email', async (req, res) => {
-      const email = req.params.email;
-      const result = await ordersCollection.aggregate([
-        {
-          $match: { 'customer.email': email }
-        },
-        {
-          $addFields: {
-            plantId: { $toObjectId: '$plantId' }
-          },
-        },
-        {
-          $lookup: {
-            from: 'plants',
-            localField: 'plantId',
-            foreignField: '_id',
-            as: 'plants'
-          },
-        },
-        {
-          $unwind: '$plants'
-        },
-        {
-          $addFields: {
-            name: '$plants.name',
-            image: '$plants.image',
-            category: '$plants.category',
-          },
-        },
-        {
-          $project: {
-            plants: 0,
-          }
-        }
-
-      ]).toArray()
-      // const result=await ordersCollection.find(query).toArray()
-      res.send(result)
-    })
-
-
-    // Cancel order
-    app.delete('/order-delete/:id', verifyToken, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const order = await ordersCollection.findOne(query)
-      if (order.status === 'Delivered') {
-        return res.status(409).send('cannot cancel once the product is Delivered!')
-      }
-      const result = await ordersCollection.deleteOne(query)
-      res.send(result)
-    })
 
 
 
