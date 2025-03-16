@@ -189,6 +189,24 @@ async function run() {
     })
 
 
+
+
+    // Plants data get db
+    app.get('/plants', async (req, res) => {
+      const result = await plantsCollection.find().toArray()
+      res.send(result)
+    })
+
+    app.get('/plants/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await plantsCollection.findOne(query)
+      res.send(result)
+    })
+
+
+
+
     // order save to database
     app.post('/order', verifyToken, async (req, res) => {
       const purchase = req.body;
@@ -267,7 +285,6 @@ async function run() {
       res.send(result)
     })
 
-
     // Cancel order
     app.delete('/order-delete/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -279,7 +296,6 @@ async function run() {
       const result = await ordersCollection.deleteOne(query)
       res.send(result)
     })
-
 
 
 
@@ -314,6 +330,36 @@ async function run() {
       // const allOrders = await ordersCollection.find().toArray()
       // const totalOrders = allOrders.length;
       // const totalPrice = allOrders.reduce((sum, order) => sum + order.price, 0)
+
+
+      // Chart details
+      const chartData = await ordersCollection.aggregate([
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: { $toDate: '$_id' }
+              }
+            },
+            quantity: {
+              $sum: '$quantity'
+            },
+            price: { $sum: '$price' },
+            order: { $sum: '1' }
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            date: '$_id',
+            quantity: 1,
+            price: 1,
+            order: 1
+          }
+        }
+      ]).next()
+
       const orderDetails = await ordersCollection.aggregate([
         {
           $group: {
@@ -329,7 +375,7 @@ async function run() {
         }
       ])
         .next()
-      res.send({ totalUsers, totalPlants, ...orderDetails })
+      res.send({ totalUsers, totalPlants, ...orderDetails, chartData })
     }
     )
 
@@ -338,7 +384,7 @@ async function run() {
 
 
     // add Plants db
-    app.post('/plants',  async (req, res) => {
+    app.post('/plants', async (req, res) => {
       const plants = req.body;
       const result = await plantsCollection.insertOne(plants)
       res.send(result)
@@ -414,18 +460,7 @@ async function run() {
 
 
 
-    // Plants data get db
-    app.get('/plants', async (req, res) => {
-      const result = await plantsCollection.find().toArray()
-      res.send(result)
-    })
 
-    app.get('/plants/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const result = await plantsCollection.findOne(query)
-      res.send(result)
-    })
 
 
 
