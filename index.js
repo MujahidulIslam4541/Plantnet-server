@@ -298,6 +298,15 @@ async function run() {
     })
 
 
+    // Create payment intent
+    app.post('/create-payment-intent', verifyToken, async (req, res) => {
+      const { quantity, plantId } = req.body;
+      const plant = await plantsCollection.findOne({ _id: new ObjectId(plantId) })
+      if (!plant) {
+        return res.status(400).send({ message: 'Plant Not found' })
+      }
+    })
+
 
 
 
