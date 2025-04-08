@@ -305,6 +305,9 @@ async function run() {
       if (!plant) {
         return res.status(400).send({ message: 'Plant Not found' })
       }
+      const totalPrice = quantity * plant?.price * 100;  //total price convert dollar to cent
+      res.send({totalPrice})
+      console.log(totalPrice)
     })
 
 
