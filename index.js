@@ -307,14 +307,14 @@ async function run() {
         return res.status(400).send({ message: 'Plant Not found' })
       }
       const totalPrice = quantity * plant?.price * 100;  //total price convert dollar to cent
-      const {client_secret} = await stripe.paymentIntents.create({
+      const { client_secret } = await stripe.paymentIntents.create({
         amount: totalPrice,
         currency: 'usd',
         automatic_payment_methods: {
           enabled: true,
         },
       });
-      res.send({clientSecret:client_secret})
+      res.send({ clientSecret: client_secret })
     })
 
 
@@ -353,8 +353,9 @@ async function run() {
 
       // Chart details
       const chartData = await ordersCollection.aggregate([
+        { $sort: { _id: -1 } },
         {
-          $group: {
+          $addFields: {
             _id: {
               $dateToString: {
                 format: '%Y-%m-%d',
@@ -365,7 +366,7 @@ async function run() {
               $sum: '$quantity'
             },
             price: { $sum: '$price' },
-            order: { $sum: '1' }
+            order: { $sum: 1 }
           },
         },
         {
@@ -377,7 +378,7 @@ async function run() {
             order: 1
           }
         }
-      ]).next()
+      ]).toArray()
 
       const orderDetails = await ordersCollection.aggregate([
         {
