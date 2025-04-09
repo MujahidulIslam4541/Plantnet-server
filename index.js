@@ -6,6 +6,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const nodemailer = require("nodemailer");
+const stripe = require('stripe')(process.env.STRIP_SECRUIT_KEY);
 
 const port = process.env.PORT || 3000
 const app = express()
@@ -306,8 +307,14 @@ async function run() {
         return res.status(400).send({ message: 'Plant Not found' })
       }
       const totalPrice = quantity * plant?.price * 100;  //total price convert dollar to cent
-      res.send({totalPrice})
-      console.log(totalPrice)
+      const {client_secret} = await stripe.paymentIntents.create({
+        amount: totalPrice,
+        currency: 'usd',
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+      res.send({clientSecret:client_secret})
     })
 
 
